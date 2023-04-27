@@ -27,4 +27,47 @@ class userService {
             console.log(err);
         }
     }
+
+    async loginUser (req, res) {
+        const {user, password} = req.body;
+        try{
+            if(!user || !password) res.status(401).send ('Invalid Information');
+
+            let userData;
+
+            const userDataByUsername = await userService.getUserByUsername({user});
+            if(userDataByUsername.length === 0) {
+                const userDataByEmail = await userService.getUserByEmail({user});
+                if(userDataByEmail.length === 0) res.status(401).send('Invalid Infromation');
+                userData = userDataByEmail;
+            } else {
+                userData = userDataByUsername;
+            };
+
+            const comparedPassword = await bcrypt.compare(password, userData.password);
+            if(!comparedPassword) res.status(401).send('Invalid infromation');
+            res.status(200).json({ token: token })
+        } catch (err) {
+            console.log(err)
+        }
+    }
+
+    async getUserByUsername({ user }){
+        try {
+            const userData = await client.query(`SELECT * FROM ${this.table} WHERE username=${user}`)
+            return userData.rows[0] || [];
+        } catch (err) {
+            console.log(err)
+        }
+    }
+
+    async getUserByEmail({ user }) {
+        try{
+            const lowerCaseEmail = user.toLowerCase()
+            const userData = await client.query(`SELECT * FROM ${this.table} WHERE email='${lowerCaseEmail}`)
+            return userData.rows[0] || [];
+        } catch (err){
+            console.log(err)
+        }
+    }
 }
