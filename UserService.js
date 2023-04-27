@@ -1,6 +1,7 @@
 const { client } = require('/..config/database');
 const { v4: uuid} = require('uuid');
 const bcrypt = require('bcrypt');
+const { isErrored } = require('stream');
 
 class userService {
     constructor(){
@@ -68,6 +69,30 @@ class userService {
             return userData.rows[0] || [];
         } catch (err){
             console.log(err)
+        }
+    }
+
+    async listUserById(req, res){
+        const { bearertoken } = req.headers;
+        if (!bearertoken) res.status(401).json({message: 'Request without token'})
+
+        const tokenData = await jwtAuthenticationService.JWTVerify(bearertoken)
+        if(tokenData === undefined) res.status(401).json(message: 'Invalid token')
+
+        const userId = tokenData.user;
+
+        try {
+            const userData = await userService.getUserById({ userId });
+            res.status(200).json ({
+                message: 'User Listed',
+                user: {
+                    id: userData.id,
+                    username: userData.username,
+                    email: userData.email,
+                }
+            })
+        } catch (err) {
+            console.log('listUserById error: ', err)
         }
     }
 }
